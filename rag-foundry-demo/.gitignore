@@ -1,0 +1,6 @@
+bin/
+obj/
+
+# Real endpoints / keys — never commit
+appsettings.local.json
+.env

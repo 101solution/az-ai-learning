@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\RagFoundryDemo.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Reuse the console project's config (RagConfig.Load reads these from the output dir). -->
+    <Content Include="..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\appsettings.local.json" Link="appsettings.local.json" CopyToOutputDirectory="PreserveNewest" Condition="Exists('..\appsettings.local.json')" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

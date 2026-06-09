@@ -1,0 +1,9 @@
+{
+  "_comment": "Copy this file to appsettings.local.json (git-ignored) and fill in real values. provision.ps1 prints them for you.",
+  "OpenAIEndpoint": "https://my-foundry.openai.azure.com/",
+  "SearchEndpoint": "https://my-search.search.windows.net",
+
+  "_authNote": "Leave the *ApiKey fields empty to use keyless auth (az login + RBAC). Fill them in only if you prefer API keys.",
+  "OpenAIApiKey": "",
+  "SearchApiKey": ""
+}
