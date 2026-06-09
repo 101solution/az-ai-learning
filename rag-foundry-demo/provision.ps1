@@ -27,7 +27,8 @@ param(
     [string] $EmbeddingModelVersion = "1",
     [int]    $ChatCapacity        = 30,
     [int]    $EmbeddingCapacity   = 50,
-    [string] $SearchSku           = "basic"
+    [string] $SearchSku           = "basic",
+    [switch] $NoLocalConfig                       # skip auto-writing appsettings.local.json
 )
 
 $ErrorActionPreference = "Stop"
@@ -96,8 +97,10 @@ az role assignment create --assignee $userId --role "Cognitive Services OpenAI U
 az role assignment create --assignee $userId --role "Search Index Data Contributor"     --scope $searchScope -o none
 az role assignment create --assignee $userId --role "Search Service Contributor"        --scope $searchScope -o none
 
-Step "Done — put these in appsettings.local.json"
-Write-Host @"
+Step "Configuring appsettings.local.json"
+if ($NoLocalConfig) {
+    Write-Host "  -NoLocalConfig set — put these in appsettings.local.json yourself:" -ForegroundColor Yellow
+    Write-Host @"
 {
   "OpenAIEndpoint": "$openAiEndpoint",
   "SearchEndpoint": "$searchEndpoint",
@@ -105,10 +108,27 @@ Write-Host @"
   "EmbeddingDeployment": "$EmbeddingModel"
 }
 "@ -ForegroundColor Green
+} else {
+    # Write the local config with API keys filled in — the most reliable path (keyless
+    # RBAC is also configured, but DefaultAzureCredential is unreliable on hosts with a
+    # managed identity / multiple tenants). appsettings.local.json is git-ignored.
+    $aoaiKey   = az cognitiveservices account keys list -n $AiServicesName -g $ResourceGroup --query key1 -o tsv
+    $searchKey = az search admin-key show --service-name $SearchName -g $ResourceGroup --query primaryKey -o tsv
+    $local = [ordered]@{
+        OpenAIEndpoint      = $openAiEndpoint
+        SearchEndpoint      = $searchEndpoint
+        ChatDeployment      = $ChatModel
+        EmbeddingDeployment = $EmbeddingModel
+        OpenAIApiKey        = $aoaiKey
+        SearchApiKey        = $searchKey
+    }
+    $localPath = Join-Path $PSScriptRoot "appsettings.local.json"
+    $local | ConvertTo-Json | Set-Content -Path $localPath -Encoding UTF8
+    Write-Host "  wrote $localPath (endpoints + API keys; git-ignored)" -ForegroundColor Green
+}
 
-Write-Host "`nAuth: keyless (RBAC) is configured for your account. Role assignments can take" -ForegroundColor Yellow
-Write-Host "a few minutes to propagate. If you'd rather use keys, fetch them with:" -ForegroundColor Yellow
-Write-Host "  az cognitiveservices account keys list -n $AiServicesName -g $ResourceGroup" -ForegroundColor DarkGray
-Write-Host "  az search admin-key show --service-name $SearchName -g $ResourceGroup" -ForegroundColor DarkGray
-Write-Host "`nTear everything down after the demo:" -ForegroundColor Yellow
-Write-Host "  az group delete --name $ResourceGroup --yes --no-wait" -ForegroundColor DarkGray
+Write-Host "`nDone. Run the demo:" -ForegroundColor Cyan
+Write-Host "  dotnet run --project `"$PSScriptRoot`" -- ingest      # build the index"
+Write-Host "  dotnet run --project `"$PSScriptRoot`" -- chat        # console chat"
+Write-Host "  dotnet run --project `"$PSScriptRoot\web`"            # Blazor web UI"
+Write-Host "`nStop the hourly cost (deletes Search only):  ./teardown.ps1" -ForegroundColor Yellow

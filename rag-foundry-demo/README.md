@@ -40,8 +40,9 @@ question ──embed──▶ hybrid + semantic search ──top-K──▶ grou
 
 This creates a resource group, an **Azure AI Services (Foundry)** account with `gpt-4.1`
 and `text-embedding-3-small` deployments, an **Azure AI Search** service (**Basic** tier —
-required for the semantic ranker), assigns the RBAC roles your account needs for keyless
-auth, and prints the values for the next step.
+required for the semantic ranker), assigns RBAC roles, and **writes `appsettings.local.json`
+for you** with the endpoints + API keys filled in (it's git-ignored). Pass `-NoLocalConfig`
+to skip that and configure manually instead.
 
 <details>
 <summary>Prefer the portal? Manual checklist</summary>
@@ -57,21 +58,11 @@ auth, and prints the values for the next step.
 
 ## 2. Configure
 
-Copy the example and paste in the values the script printed:
+`provision.ps1` already wrote `appsettings.local.json` with your endpoints + keys, so you
+can skip straight to step 3. (If you used `-NoLocalConfig`, copy
+`appsettings.local.json.example` → `appsettings.local.json` and paste the printed values.)
 
-```powershell
-Copy-Item appsettings.local.json.example appsettings.local.json
-```
-
-```jsonc
-{
-  "OpenAIEndpoint": "https://<your-foundry>.openai.azure.com/",
-  "SearchEndpoint": "https://<your-search>.search.windows.net"
-  // leave *ApiKey blank to use keyless auth (recommended)
-}
-```
-
-`appsettings.local.json` is git-ignored. You can also override any setting with a
+`appsettings.local.json` is git-ignored. You can override any setting with a
 `RAG_`-prefixed environment variable (e.g. `RAG_TopK=8`).
 
 ## 3. Run
@@ -128,14 +119,31 @@ it "just works" — no credential env vars needed). The console app is unaffecte
 | `SemanticConfiguration` / semantic errors | Semantic ranker needs Search **Basic+** with the semantic plan enabled. Or set `"UseSemanticRanker": false`. |
 | Embedding dimension mismatch | `EmbeddingDimensions` must match the model (1536 for `-small`, 3072 for `-large`) **and** the indexed data. Re-run `reset` then `ingest` after changing it. |
 
-## Cost & cleanup
+## Cost, teardown & re-enable
 
-Chat/embedding are pay-per-token (tiny for this corpus). The Search **Basic** service bills
-hourly while it exists — delete the resource group when done:
+Chat/embedding are pay-per-token (cents for this corpus). The only standing cost is **Azure
+AI Search Basic** (~US$0.13/hour while it exists). Two helper scripts manage this:
 
-```bash
-az group delete --name rg-rag-foundry-demo --yes --no-wait
+**Stop the cost between demos** — deletes *only* Search (keeps the Foundry account + model
+deployments, which cost ~$0 idle):
+
+```powershell
+./teardown.ps1            # delete Search only
+./teardown.ps1 -All       # delete the whole resource group
 ```
+
+**Bring it back** — recreates Search (re-using the existing Foundry account), refreshes
+`appsettings.local.json` with the new key, and rebuilds the index. ~5 minutes:
+
+```powershell
+./reenable.ps1            # recreate Search + write config + ingest
+```
+
+> `reenable.ps1` selects the right subscription, then runs the idempotent `provision.ps1`
+> (which skips the existing Foundry account and only recreates Search). It also works after
+> a full `-All` teardown — in that case it recreates everything. A recreated Search service
+> gets a **new** key, which is why `appsettings.local.json` is rewritten and the index
+> (which lived inside Search) must be re-ingested.
 
 ## Level-ups (not built here)
 
