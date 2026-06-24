@@ -16,4 +16,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Keep the slide deck served at /slides.html in sync with the canonical copy. -->
+  <Target Name="SyncSlides" BeforeTargets="ResolveProjectStaticWebAssets;BeforeBuild">
+    <Copy SourceFiles="..\slides.html" DestinationFiles="wwwroot\slides.html"
+          SkipUnchangedFiles="true" Condition="Exists('..\slides.html')" />
+  </Target>
+
 </Project>

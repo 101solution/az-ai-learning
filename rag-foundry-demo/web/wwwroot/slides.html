@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RAG on Azure AI Foundry — Demo</title>
+
+  <!-- reveal.js core + theme (CDN, no build step) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/theme/black.css" id="theme">
+  <!-- code highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/monokai.css">
+
+  <style>
+    :root {
+      --accent: #f5a623;        /* industrial amber */
+      --accent2: #4fc3f7;       /* azure blue */
+      --ok: #66bb6a;
+      --bad: #ef5350;
+    }
+    .reveal { font-size: 30px; }
+    .reveal h1, .reveal h2, .reveal h3 { color: #fff; text-transform: none; letter-spacing: -0.5px; }
+    .reveal h1 { font-size: 2.0em; }
+    .reveal section h2 { color: var(--accent); }
+    .reveal .accent { color: var(--accent); }
+    .reveal .blue { color: var(--accent2); }
+    .reveal .muted { color: #9aa0a6; }
+    .reveal small { color: #9aa0a6; }
+    .reveal pre { width: 100%; box-shadow: none; font-size: 0.55em; }
+    .reveal pre code { max-height: 520px; padding: 18px 22px; border-radius: 10px; }
+    .reveal section img, .reveal .card {
+      background: #1c1f24; border: 1px solid #2c3038; border-radius: 12px;
+    }
+    .reveal .card { padding: 18px 24px; }
+    .reveal .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .reveal .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+    .reveal .pill {
+      display: inline-block; padding: 4px 14px; border-radius: 999px;
+      background: rgba(245,166,35,.15); color: var(--accent);
+      border: 1px solid rgba(245,166,35,.4); font-size: .62em; margin: 4px;
+    }
+    .reveal .step { color: var(--accent); font-weight: 700; }
+    .reveal ul { line-height: 1.5; }
+    .reveal .kicker { color: var(--accent2); letter-spacing: 3px; font-size: .5em; text-transform: uppercase; }
+    .reveal .footer { position: fixed; bottom: 12px; left: 18px; font-size: 14px; color: #5f6368; }
+    .reveal .mermaid { background: transparent; }
+    .reveal table { font-size: .68em; }
+    .reveal th { color: var(--accent); }
+    .reveal .big { font-size: 1.4em; line-height: 1.3; }
+    .reveal .tag-ok   { color: var(--ok); }
+    .reveal .tag-bad  { color: var(--bad); }
+    .reveal .demo-q { background:#11151a; border-left:4px solid var(--accent2); padding:10px 16px; border-radius:6px; margin:10px 0; text-align:left; font-size:.8em;}
+  </style>
+</head>
+<body>
+<div class="reveal">
+  <div class="slides">
+
+    <!-- 1. Title -->
+    <section data-background-gradient="linear-gradient(135deg,#0f1115 0%,#1a2330 100%)">
+      <p class="kicker">Azure AI Foundry · Hands-on demo</p>
+      <h1>Build an AI Product<br>with <span class="accent">RAG</span></h1>
+      <p class="big muted">Grounding a chat assistant on <span class="blue">your own documents</span><br>— from zero resources to a cited answer.</p>
+      <p><span class="pill">.NET</span><span class="pill">Azure AI Foundry</span><span class="pill">Azure AI Search</span><span class="pill">Hybrid + Semantic</span></p>
+      <p class="muted"><small>Press <span class="accent">S</span> for speaker notes · <span class="accent">→</span> to advance · <span class="accent">ESC</span> for overview</small></p>
+    </section>
+
+    <!-- 2. What we're building -->
+    <section>
+      <h2>What we'll build in the next 30 minutes</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3 class="blue">The product</h3>
+          <p>A console assistant that answers questions about a <span class="accent">mining operations knowledge base</span> — safety, equipment, shift procedures.</p>
+          <p>Every answer is <span class="accent">grounded in the docs</span> and shows its <span class="accent">citations</span>.</p>
+        </div>
+        <div class="card">
+          <h3 class="blue">The outcome</h3>
+          <ul>
+            <li><code>ingest</code> → builds a searchable vector index</li>
+            <li><code>chat</code> → grounded Q&amp;A with sources</li>
+            <li>Asks something off-topic → it says <span class="tag-ok">"I don't know"</span> instead of making it up</li>
+          </ul>
+        </div>
+      </div>
+      <aside class="notes">Frame the whole demo here. The "I don't know" moment is the punchline — it's the difference between a grounded assistant and a confident liar.</aside>
+    </section>
+
+    <!-- 3. The problem -->
+    <section>
+      <h2>The problem with a raw LLM</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3 class="tag-bad">Without grounding</h3>
+          <ul>
+            <li>Doesn't know <em>your</em> data — policies, manuals, runbooks</li>
+            <li>Frozen at its training cutoff</li>
+            <li><span class="tag-bad">Hallucinates</span> confidently when it doesn't know</li>
+            <li>No source you can verify or audit</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="tag-ok">With RAG</h3>
+          <ul>
+            <li>Answers from <span class="accent">your private content</span></li>
+            <li>Update the docs → update the answers, no retraining</li>
+            <li>Grounded → far fewer hallucinations</li>
+            <li>Returns <span class="accent">citations</span> for trust &amp; compliance</li>
+          </ul>
+        </div>
+      </div>
+      <p class="muted"><small>RAG = give the model the right facts <em>at question time</em>, then ask it to answer using only those facts.</small></p>
+    </section>
+
+    <!-- 4. RAG in one slide -->
+    <section>
+      <h2>RAG in one slide</h2>
+      <p class="big">
+        <span class="step">1 · Retrieve</span> &nbsp;→&nbsp;
+        <span class="step">2 · Augment</span> &nbsp;→&nbsp;
+        <span class="step">3 · Generate</span>
+      </p>
+      <div class="grid3">
+        <div class="card"><h3 class="step">1 · Retrieve</h3><p>Embed the question, search the index, get the most relevant chunks.</p></div>
+        <div class="card"><h3 class="step">2 · Augment</h3><p>Stuff those chunks into the prompt as grounding context.</p></div>
+        <div class="card"><h3 class="step">3 · Generate</h3><p>Model answers <em>using only</em> that context, with citations.</p></div>
+      </div>
+      <p class="muted"><small>"Conceptually simple — the hard parts are <span class="accent">retrieval quality</span> and <span class="accent">prompt discipline</span>." We'll see both.</small></p>
+      <aside class="notes">Emphasise: the LLM is the easy part. 80% of RAG quality is the retrieval pipeline — chunking, embeddings, hybrid search, ranking.</aside>
+    </section>
+
+    <!-- 5. Why Foundry -->
+    <section>
+      <h2>Why Azure AI Foundry</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3 class="blue">One platform for the pieces</h3>
+          <ul>
+            <li><span class="accent">Model catalog</span> + managed deployments (chat &amp; embeddings)</li>
+            <li><span class="accent">Azure AI Search</span> as the recommended vector store</li>
+            <li>Enterprise security: <span class="accent">Entra ID / RBAC</span>, private networking, content safety</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="blue">Two models we deploy today</h3>
+          <ul>
+            <li><code>gpt-4.1</code> — fast, low-latency Q&amp;A (Foundry's pick for real-time RAG)</li>
+            <li><code>text-embedding-3-small</code> — turns text into 1536-dim vectors</li>
+          </ul>
+          <p class="muted"><small>Swap in <code>gpt-5-mini</code> for reasoning, or <code>-3-large</code> for higher-quality recall.</small></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Architecture -->
+    <section>
+      <h2>Architecture</h2>
+      <div class="mermaid" style="font-size:26px;">
+flowchart LR
+  subgraph Ingest["🔧 Ingest (one-time / on change)"]
+    D[/"data/*.md<br>mining docs"/] --> C[Chunk]
+    C --> E1["Embed<br>text-embedding-3-small"]
+    E1 --> IDX[("Azure AI Search<br>vector + text + semantic")]
+  end
+  subgraph Query["💬 Chat (per question)"]
+    Q([User question]) --> E2["Embed query"]
+    E2 --> S["Hybrid + semantic search"]
+    IDX --> S
+    S --> P["Grounded prompt<br>(top-K chunks + rules)"]
+    P --> G["gpt-4.1"]
+    G --> A([Answer + citations])
+  end
+  classDef az fill:#1c2733,stroke:#4fc3f7,color:#fff;
+  classDef store fill:#2a2113,stroke:#f5a623,color:#fff;
+  class E1,E2,G az; class IDX store;
+      </div>
+      <aside class="notes">Walk left-to-right. Top row runs once when docs change. Bottom row runs on every question. Same embedding model must be used on both sides.</aside>
+    </section>
+
+    <!-- 6b. Anatomy of a chat turn (sequence) -->
+    <section>
+      <h2>Anatomy of one chat turn</h2>
+      <div class="mermaid" style="font-size:22px;">
+sequenceDiagram
+  autonumber
+  actor U as User
+  participant A as App (RagChatService)
+  participant L as gpt-4.1
+  participant E as Embeddings
+  participant S as Azure AI Search
+  U->>A: question + chat history
+  A->>L: condense follow-up → standalone query
+  L-->>A: "What gloves are required on the haul road?"
+  A->>E: embed(standalone query)
+  E-->>A: query vector
+  A->>S: hybrid + semantic search
+  S-->>A: top-K grounded chunks
+  A->>L: system rules + history + sources + question
+  L-->>A: grounded answer + [citations]
+  A-->>U: answer + source list
+      </div>
+      <p class="muted"><small>Step 2 (the <span class="accent">condense</span>) is what makes multi-turn work: <em>"and what about gloves?"</em> is rewritten into a standalone query before retrieval.</small></p>
+      <aside class="notes">This is the per-question loop. The condense step (2-3) resolves pronouns and ellipsis against history so retrieval gets a self-contained query. History is also replayed into the final generate call (step 9) so the answer is conversational.</aside>
+    </section>
+
+    <!-- 7. Resources to provision -->
+    <section>
+      <h2>What we provision (from zero)</h2>
+      <table>
+        <tr><th>Resource</th><th>Why</th><th>SKU / note</th></tr>
+        <tr><td>Resource group</td><td>Holds everything; easy cleanup</td><td>—</td></tr>
+        <tr><td>Azure AI Services (Foundry)</td><td>Host chat + embedding deployments</td><td><code>S0</code></td></tr>
+        <tr><td>↳ <code>gpt-4.1</code> deployment</td><td>Generation</td><td>GlobalStandard</td></tr>
+        <tr><td>↳ <code>text-embedding-3-small</code></td><td>Vectors</td><td>1536 dims</td></tr>
+        <tr><td>Azure AI Search</td><td>Vector + hybrid + semantic retrieval</td><td><span class="accent">Basic</span> (semantic needs Basic+)</td></tr>
+        <tr><td>RBAC role assignments</td><td>Keyless auth from the app</td><td>OpenAI User · Search Data/Service Contributor</td></tr>
+      </table>
+      <p class="muted"><small>Scripted in <code>provision.ps1</code> (az CLI). Portal checklist in the README as a fallback.</small></p>
+    </section>
+
+    <!-- 8. Ingestion code -->
+    <section>
+      <h2>Step 1 — Ingest: chunk → embed → index</h2>
+      <pre><code class="language-csharp" data-trim data-line-numbers="1-3|5-7|9-11">// 1. Read docs and split into overlapping, citable chunks
+var chunks = DocumentChunker.LoadAndChunk("data");   // ~500-token windows
+
+// 2. Turn each chunk into a vector with the Foundry embedding model
+var vectors = await embedder.EmbedBatchAsync(chunks.Select(c => c.Text));
+
+// 3. Push text + vector into Azure AI Search
+await indexManager.UploadAsync(chunks, vectors);
+Console.WriteLine($"Indexed {chunks.Count} chunks.");</code></pre>
+      <p class="muted"><small>Chunking matters: too big → noisy context &amp; wasted tokens; too small → lost meaning. Overlap preserves context across boundaries.</small></p>
+    </section>
+
+    <!-- 9. Index schema -->
+    <section>
+      <h2>The index: vector + text + semantic</h2>
+      <pre><code class="language-csharp" data-trim data-line-numbers="1-7|9-12|14-17">var fields = new List&lt;SearchField&gt;
+{
+    new SimpleField("id", SearchFieldDataType.String) { IsKey = true },
+    new SearchableField("title")  { IsFilterable = true },
+    new SearchableField("source") { IsFilterable = true },   // for citations
+    new SearchableField("chunk"),                            // keyword search
+    new VectorSearchField("contentVector", 1536, "vector-profile") // similarity
+};
+
+var vectorSearch = new VectorSearch();
+vectorSearch.Algorithms.Add(new HnswAlgorithmConfiguration("hnsw"));
+vectorSearch.Profiles.Add(new VectorSearchProfile("vector-profile", "hnsw"));
+
+var semantic = new SemanticSearch();      // re-ranks results by meaning
+semantic.Configurations.Add(new SemanticConfiguration("semantic-config",
+    new SemanticPrioritizedFields { TitleField = new SemanticField("title"),
+        ContentFields = { new SemanticField("chunk") } }));</code></pre>
+      <p class="muted"><small>One index stores <span class="accent">both</span> the human-readable text and its vector — that's what makes hybrid search possible.</small></p>
+    </section>
+
+    <!-- 10. Query time -->
+    <section>
+      <h2>Step 2 — Retrieve: hybrid + semantic</h2>
+      <pre><code class="language-csharp" data-trim data-line-numbers="1-2|4-13|15-16">// Embed the user's question with the SAME model used for indexing
+float[] queryVector = await embedder.EmbedAsync(question);
+
+var options = new SearchOptions
+{
+    Size = TopK,
+    VectorSearch = new()
+    {
+        Queries = { new VectorizedQuery(queryVector)
+                     { KNearestNeighborsCount = TopK, Fields = { "contentVector" } } }
+    },
+    QueryType = SearchQueryType.Semantic,                        // re-rank
+    SemanticSearch = new() { SemanticConfigurationName = "semantic-config" }
+};
+// Passing the text + the vector = HYBRID search (keyword ∪ similarity)
+var results = await searchClient.SearchAsync&lt;KnowledgeChunk&gt;(question, options);</code></pre>
+      <p class="muted"><small><span class="accent">Vector</span> catches meaning ("PPE" ≈ "protective equipment"). <span class="accent">Keyword</span> catches exact terms &amp; codes. <span class="accent">Semantic ranker</span> reorders by relevance.</small></p>
+    </section>
+
+    <!-- 11. Grounded generation -->
+    <section>
+      <h2>Step 3 — Generate: grounded &amp; cited</h2>
+      <pre><code class="language-csharp" data-trim data-line-numbers="1-5|7-10|12-13">var system = """
+  You are a mining operations assistant.
+  Answer ONLY from the numbered SOURCES below.
+  Cite sources as [1], [2]. If the answer isn't in the sources,
+  say: "I don't know — that isn't in the knowledge base."
+  """;
+
+var context = string.Join("\n", results.Select((r, i) =>
+    $"[{i + 1}] ({r.Source}) {r.Chunk}"));
+
+var answer = await chatClient.CompleteChatAsync(
+    [ new SystemChatMessage(system),
+      new UserChatMessage($"SOURCES:\n{context}\n\nQUESTION: {question}") ]);</code></pre>
+      <p class="muted"><small>The system prompt is the <span class="accent">guardrail</span>: "only from sources" + "cite" + "say I don't know". This is where grounding is enforced.</small></p>
+    </section>
+
+    <!-- 12. Demo flow -->
+    <section>
+      <h2>Live demo flow</h2>
+      <ol>
+        <li><code>dotnet run -- ingest</code> &nbsp;<span class="muted">→ "Indexed 52 chunks" (13 docs, iron ore + lithium)</span></li>
+        <li><code>dotnet run -- chat</code> &nbsp;<span class="muted">→ interactive Q&amp;A</span></li>
+      </ol>
+      <div class="demo-q">❓ <b>What PPE is required on the haul road?</b><br><span class="muted">→ grounded answer + <span class="accent">[ppe-policy.md]</span></span></div>
+      <div class="demo-q">❓ <b>Can I use my mobile phone while driving on the haul road?</b><br><span class="muted">→ grounded <b>"No"</b> + <span class="accent">[site-safety-induction.md]</span> — a question with an obvious answer it still won't invent</span></div>
+      <div class="demo-q">❓ <b>How is pit slope stability monitored?</b> → then <b>"what happens at a red trigger?"</b><br><span class="muted">→ shows <span class="accent">multi-turn</span> follow-up + <span class="accent">[ground-control-geotechnical.md]</span></span></div>
+      <div class="demo-q">❓ <b>What's the company parental-leave policy?</b><br><span class="tag-ok">→ "I don't know — that isn't in the knowledge base."</span> &nbsp;👈 the money shot</div>
+      <aside class="notes">Have the terminal/web app pre-warmed. The phone question is the best teaching moment: the answer is "obviously no", yet the model only says no because the induction doc says so — it cites it rather than relying on world knowledge. Save the parental-leave (out-of-corpus) question for last — it proves grounding works.</aside>
+    </section>
+
+    <!-- 12b. Live knowledge update -->
+    <section>
+      <h2>Teach it something new — <span class="accent">live</span></h2>
+      <p class="muted">Update the docs → update the answers. No retraining, no redeploy.</p>
+      <ol>
+        <li><b>Ask:</b> <em>"What should I do to manage heat stress on site?"</em> → <span class="tag-ok">"I don't know"</span></li>
+        <li><b>Add a doc:</b> <code>Copy-Item demo\heat-stress-management.md data\</code></li>
+        <li><b>Re-ingest:</b> <code>dotnet run -- ingest</code> &nbsp;<span class="muted">(~seconds)</span></li>
+        <li><b>Ask again:</b> same question → grounded answer + <span class="accent">[heat-stress-management.md]</span></li>
+      </ol>
+      <p class="muted"><small>The model is <b>unchanged</b> — we only gave it new <span class="accent">retrievable knowledge</span>. The same trick updates or corrects any policy, and both the local and deployed apps pick it up instantly (shared index).</small></p>
+      <aside class="notes">This is the most memorable beat — do it live. The heat-stress doc is staged in demo/ (not indexed). Ask the question (I don't know), copy the doc into data/, run ingest, ask again. Emphasise: no fine-tuning, no model change — RAG means knowledge is just data you can edit.</aside>
+    </section>
+
+    <!-- 13. Live demo marker -->
+    <section data-background-gradient="linear-gradient(135deg,#1a2330 0%,#0f1115 100%)">
+      <p class="kicker">Switch to terminal</p>
+      <h1>🖥️ &nbsp;Live demo</h1>
+      <p class="muted">ingest → ask → watch the citations → ask the off-topic one</p>
+    </section>
+
+    <!-- 14. Production concerns -->
+    <section>
+      <h2>What makes it production-grade</h2>
+      <div class="grid2">
+        <div class="card">
+          <h3 class="blue">Trust &amp; security</h3>
+          <ul>
+            <li><span class="accent">Keyless auth</span> (Entra ID + RBAC), no keys in code</li>
+            <li>Citations → verifiable, auditable answers</li>
+            <li>Treat retrieved text as <span class="tag-bad">untrusted</span> (prompt-injection)</li>
+            <li>Document-level <span class="accent">security trimming</span> in Search</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3 class="blue">Cost &amp; latency</h3>
+          <ul>
+            <li>Retrieval adds round-trips + query embedding</li>
+            <li>Retrieved chunks add input tokens — tune <code>TopK</code></li>
+            <li>Pick the model for the job (4.1 fast vs 5 reasoning)</li>
+            <li>Evaluate retrieval quality before rollout</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15. Level ups -->
+    <section>
+      <h2>Where to take it next</h2>
+      <div class="grid2">
+        <div class="card">
+          <ul>
+            <li><span class="accent">Foundry Agent</span> + Azure AI Search <em>tool</em> — let the agent do retrieval, add memory &amp; multi-turn</li>
+            <li><span class="accent">Integrated vectorization</span> — Search chunks &amp; embeds for you (skillsets/indexers)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <ul>
+            <li><span class="accent">Agentic retrieval</span> — query planning, sub-queries, answer synthesis (Foundry IQ)</li>
+            <li><span class="accent">Web UI</span> — Blazor / minimal API chat over the same services</li>
+            <li><span class="accent">Evaluation</span> — groundedness &amp; relevance metrics</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16. Cost & cleanup -->
+    <section>
+      <h2>Cost &amp; cleanup</h2>
+      <ul>
+        <li>Pay-per-token for chat + embeddings (tiny for a demo corpus)</li>
+        <li>Azure AI Search <span class="accent">Basic</span> is the main standing cost — hourly while it exists</li>
+        <li>Tear it all down in one line:</li>
+      </ul>
+      <pre><code class="language-bash" data-trim>az group delete --name rg-rag-foundry-demo --yes --no-wait</code></pre>
+      <p class="muted"><small>Delete the resource group after the demo so the Search service stops billing.</small></p>
+    </section>
+
+    <!-- 17. Recap -->
+    <section>
+      <h2>Key takeaways</h2>
+      <ul>
+        <li>RAG = <span class="step">Retrieve → Augment → Generate</span>; the LLM is the easy part</li>
+        <li>Foundry gives you the <span class="accent">models</span>, <span class="accent">AI Search</span>, and <span class="accent">security</span> in one place</li>
+        <li><span class="accent">Hybrid + semantic</span> retrieval is what makes answers good</li>
+        <li>The <span class="accent">system prompt</span> enforces grounding &amp; citations</li>
+        <li>"I don't know" is a <span class="tag-ok">feature</span>, not a bug</li>
+      </ul>
+    </section>
+
+    <!-- 18. Thanks -->
+    <section data-background-gradient="linear-gradient(135deg,#0f1115 0%,#1a2330 100%)">
+      <h1>Thank you</h1>
+      <p class="big muted">Questions?</p>
+      <p><span class="pill">Code: rag-foundry-demo/</span><span class="pill">Plan: PLAN.md</span><span class="pill">Run it: README.md</span></p>
+    </section>
+
+  </div>
+</div>
+<div class="footer">RAG on Azure AI Foundry · .NET demo</div>
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/highlight/highlight.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@5.1.0/plugin/notes/notes.js"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose',
+    themeVariables: { fontSize: '18px' },
+    sequence: { mirrorActors: false, useMaxWidth: true, messageMargin: 30, boxMargin: 8 } });
+
+  // Mermaid needs a laid-out, *visible* element to measure text, so render each
+  // diagram in-place the first time its slide becomes the current (display:block)
+  // slide. Rendering while a slide is hidden collapses the diagram to ~0px.
+  function renderMermaidIn(slide) {
+    if (!slide) return;
+    const blocks = slide.querySelectorAll('.mermaid:not([data-rendered])');
+    if (!blocks.length) return;
+    blocks.forEach(b => b.setAttribute('data-rendered', '1'));
+    mermaid.run({ nodes: [...blocks] }).catch(e => console.error('Mermaid:', e));
+  }
+
+  const deck = Reveal;
+  deck.on('ready', e => renderMermaidIn(e.currentSlide));
+  deck.on('slidechanged', e => renderMermaidIn(e.currentSlide));
+  deck.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    plugins: [ RevealHighlight, RevealNotes ],
+  });
+</script>
+</body>
+</html>
