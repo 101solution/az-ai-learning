@@ -301,13 +301,28 @@ var answer = await chatClient.CompleteChatAsync(
     <section>
       <h2>Live demo flow</h2>
       <ol>
-        <li><code>dotnet run -- ingest</code> &nbsp;<span class="muted">→ "Indexed 42 chunks"</span></li>
+        <li><code>dotnet run -- ingest</code> &nbsp;<span class="muted">→ "Indexed 52 chunks" (13 docs, iron ore + lithium)</span></li>
         <li><code>dotnet run -- chat</code> &nbsp;<span class="muted">→ interactive Q&amp;A</span></li>
       </ol>
-      <div class="demo-q">❓ <b>What PPE is required on the haul road?</b><br><span class="muted">→ grounded answer + <span class="accent">[ppe-policy.md]</span> citation</span></div>
-      <div class="demo-q">❓ <b>How do I report a near-miss incident?</b><br><span class="muted">→ steps from <span class="accent">[incident-reporting.md]</span></span></div>
+      <div class="demo-q">❓ <b>What PPE is required on the haul road?</b><br><span class="muted">→ grounded answer + <span class="accent">[ppe-policy.md]</span></span></div>
+      <div class="demo-q">❓ <b>Can I use my mobile phone while driving on the haul road?</b><br><span class="muted">→ grounded <b>"No"</b> + <span class="accent">[site-safety-induction.md]</span> — a question with an obvious answer it still won't invent</span></div>
+      <div class="demo-q">❓ <b>How is pit slope stability monitored?</b> → then <b>"what happens at a red trigger?"</b><br><span class="muted">→ shows <span class="accent">multi-turn</span> follow-up + <span class="accent">[ground-control-geotechnical.md]</span></span></div>
       <div class="demo-q">❓ <b>What's the company parental-leave policy?</b><br><span class="tag-ok">→ "I don't know — that isn't in the knowledge base."</span> &nbsp;👈 the money shot</div>
-      <aside class="notes">Have the terminal pre-warmed. Run ingest before the talk if it's slow. Save the out-of-corpus question for last — it proves the grounding actually works.</aside>
+      <aside class="notes">Have the terminal/web app pre-warmed. The phone question is the best teaching moment: the answer is "obviously no", yet the model only says no because the induction doc says so — it cites it rather than relying on world knowledge. Save the parental-leave (out-of-corpus) question for last — it proves grounding works.</aside>
+    </section>
+
+    <!-- 12b. Live knowledge update -->
+    <section>
+      <h2>Teach it something new — <span class="accent">live</span></h2>
+      <p class="muted">Update the docs → update the answers. No retraining, no redeploy.</p>
+      <ol>
+        <li><b>Ask:</b> <em>"What should I do to manage heat stress on site?"</em> → <span class="tag-ok">"I don't know"</span></li>
+        <li><b>Add a doc:</b> <code>Copy-Item demo\heat-stress-management.md data\</code></li>
+        <li><b>Re-ingest:</b> <code>dotnet run -- ingest</code> &nbsp;<span class="muted">(~seconds)</span></li>
+        <li><b>Ask again:</b> same question → grounded answer + <span class="accent">[heat-stress-management.md]</span></li>
+      </ol>
+      <p class="muted"><small>The model is <b>unchanged</b> — we only gave it new <span class="accent">retrievable knowledge</span>. The same trick updates or corrects any policy, and both the local and deployed apps pick it up instantly (shared index).</small></p>
+      <aside class="notes">This is the most memorable beat — do it live. The heat-stress doc is staged in demo/ (not indexed). Ask the question (I don't know), copy the doc into data/, run ingest, ask again. Emphasise: no fine-tuning, no model change — RAG means knowledge is just data you can edit.</aside>
     </section>
 
     <!-- 13. Live demo marker -->

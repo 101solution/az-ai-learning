@@ -37,7 +37,10 @@ public static class DocumentChunker
     private static string ResolveDir(string dataPath)
     {
         if (Path.IsPathRooted(dataPath) && Directory.Exists(dataPath)) return dataPath;
-        foreach (var baseDir in new[] { AppContext.BaseDirectory, Directory.GetCurrentDirectory() })
+        // Prefer the current directory (the source data/ folder when run via `dotnet run`)
+        // over the build-output copy, so edits to docs are picked up by `ingest` WITHOUT a
+        // rebuild — handy for live "edit a doc, re-ingest, ask again" demos.
+        foreach (var baseDir in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
         {
             var p = Path.Combine(baseDir, dataPath);
             if (Directory.Exists(p)) return p;
