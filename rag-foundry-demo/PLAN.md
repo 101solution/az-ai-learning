@@ -7,7 +7,7 @@ Generation (RAG)** on **Azure AI Foundry**. The deliverable is a small, reliable
 
 - **Format:** code-based .NET console app (web UI is a stretch goal, not built first).
 - **Audience:** .NET developers — the code shows the RAG mechanics explicitly (Retrieve → Augment → Generate), not a black box.
-- **Data:** synthetic, **mining / MinRes-flavoured** knowledge base (site safety, equipment maintenance, shift procedures) — no external data needed.
+- **Data:** synthetic, **mining-flavoured** knowledge base (site safety, equipment maintenance, shift procedures) — no external data needed.
 - **Azure resources:** none yet — we provide a provisioning script + a portal checklist fallback.
 - **Retrieval:** **hybrid (vector + keyword) + semantic ranker** → requires Azure AI Search **Basic** tier (Free tier has no semantic ranker).
 

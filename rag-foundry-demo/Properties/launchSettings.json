@@ -5,8 +5,8 @@
       "environmentVariables": {
         "//1": "Restrict DefaultAzureCredential to developer creds (az login) — this VM has a managed identity that would otherwise be picked first.",
         "AZURE_TOKEN_CREDENTIALS": "dev",
-        "//2": "Pin the tenant that owns the demo resources (VS_Sub_MRL). Your default az context is a different tenant, so without this the dev creds request a token for the wrong tenant (HTTP 400 tenant mismatch).",
-        "AZURE_TENANT_ID": "5509d93f-af21-4739-b7c9-ec32c2ca43a1"
+        "//2": "Set this to the tenant that owns your demo resources if your default az context is a different tenant — otherwise the dev creds request a token for the wrong tenant (HTTP 400 tenant mismatch). Leave blank to use your current az context.",
+        "AZURE_TENANT_ID": ""
       }
     }
   }

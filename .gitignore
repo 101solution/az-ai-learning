@@ -1,0 +1,10 @@
+# Local Claude Code working notes / memory — not for publication
+.claude/
+
+# Build output
+bin/
+obj/
+
+# Real endpoints / keys — never commit
+appsettings.local.json
+.env

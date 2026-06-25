@@ -10,7 +10,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string] $Subscription  = "1f513fde-7a26-4aae-a69e-3f29f41d7f2a",  # VS_Sub_MRL
+    [string] $Subscription  = "",  # defaults to your current az context; pass -Subscription <id> to override
     [string] $ResourceGroup = "rg-rag-foundry-demo",
     [string] $SearchName    = "search-rag-63865",
     [switch] $All
@@ -19,8 +19,10 @@ param(
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $true
 
-Write-Host "Selecting subscription $Subscription…" -ForegroundColor Cyan
-az account set --subscription $Subscription
+if ($Subscription) {
+    Write-Host "Selecting subscription $Subscription…" -ForegroundColor Cyan
+    az account set --subscription $Subscription
+}
 
 if ($All) {
     Write-Host "Deleting the ENTIRE resource group '$ResourceGroup'…" -ForegroundColor Yellow
