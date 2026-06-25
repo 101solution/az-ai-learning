@@ -6,6 +6,8 @@ Hands-on examples for building AI applications on Azure with .NET.
 
 **[rag-foundry-web-6.azurewebsites.net](https://rag-foundry-web-6.azurewebsites.net/)** — a streaming RAG chat assistant grounded in a synthetic mining-operations knowledge base. Ask it about site safety, equipment, or shift procedures and watch it answer with citations — or decline when the answer isn't in the corpus.
 
+![Mining Operations Assistant — grounded answer with citations](./rag-foundry-demo/docs/web-app.png)
+
 > Slide deck: **[/slides.html](https://rag-foundry-web-6.azurewebsites.net/slides.html)**
 
 ## Projects

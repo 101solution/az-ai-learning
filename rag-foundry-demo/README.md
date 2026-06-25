@@ -95,6 +95,8 @@ A browser chat over the **same** `RagChatService` lives in [`web/`](./web) — a
 project that references this one, so the RAG logic isn't duplicated. Answers **stream in
 token-by-token**, follow-ups show the rewritten query, and citations link to source files.
 
+![Mining Operations Assistant web UI](./docs/web-app.png)
+
 ```bash
 dotnet run --project web        # then open the printed https://localhost:xxxx URL
 ```
