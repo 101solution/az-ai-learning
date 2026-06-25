@@ -139,7 +139,7 @@ deployments, which cost ~$0 idle):
 ./reenable.ps1            # recreate Search + write config + ingest
 ```
 
-> `reenable.ps1` selects the right subscription, then runs the idempotent `provision.ps1`
+> `reenable.ps1` uses your current `az` context (pass `-Subscription <id>` to override), then runs the idempotent `provision.ps1`
 > (which skips the existing Foundry account and only recreates Search). It also works after
 > a full `-All` teardown — in that case it recreates everything. A recreated Search service
 > gets a **new** key, which is why `appsettings.local.json` is rewritten and the index
@@ -153,3 +153,7 @@ deployments, which cost ~$0 idle):
 - **Agentic retrieval** — query planning, parallel sub-queries, answer synthesis (Foundry IQ).
 - ✅ **Web UI** — built: a streaming Blazor Server chat in [`web/`](./web) (see above).
 - **Evaluation & observability** — groundedness/relevance metrics, OpenTelemetry tracing.
+
+## License
+
+MIT — see [`LICENSE`](../LICENSE).
